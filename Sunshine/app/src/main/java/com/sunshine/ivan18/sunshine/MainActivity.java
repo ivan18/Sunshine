@@ -1,23 +1,15 @@
 package com.sunshine.ivan18.sunshine;
 
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import com.sunshine.ivan18.sunshine.fragment.ForecastFragment;
 
 
 public class MainActivity extends ActionBarActivity {
+    public static String EXCEPTION="com.sunshine.ivan18.sunshine.MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +27,7 @@ public class MainActivity extends ActionBarActivity {
             }
 
             // Create a new Fragment to be placed in the activity layout
-            PlaceholderFragment frag_login= new PlaceholderFragment();
+            ForecastFragment frag_login= new ForecastFragment();
 
             // In case this activity was started with special instructions from an
             // Intent, pass the Intent's extras to the fragment as arguments
@@ -45,6 +37,7 @@ public class MainActivity extends ActionBarActivity {
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.fragment_container, frag_login).commit();
         }
+
     }
 
 
@@ -70,39 +63,5 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-      * A placeholder fragment containing a single view.
-      */
-    public static class PlaceholderFragment extends Fragment{
-        private ArrayAdapter<String> adapter;
-        public PlaceholderFragment(){
-        }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-            // Inflate the layout for this fragment
-            View rootView= inflater.inflate(R.layout.fragment_main, container, false);
-            List<String> itemsWeather=populateWeather();
-
-            adapter= new ArrayAdapter<String>(getActivity(),R.layout.list_item_forecast,R.id.list_item_forecast_textView,itemsWeather);
-            ListView listView= (ListView)rootView.findViewById(R.id.listview_forecast);
-            listView.setAdapter(adapter);
-            return rootView;
-        }
-    }
-
-    public static List<String> populateWeather(){
-        List<String> items = new ArrayList<String>();
-        String[] days= {"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"};
-        String[] weathers={"Sun","Cloudy","Rain","Snow"};
-        String itemContent= null;
-        Random rnd= new Random();
-        for (int i=0; i<20; i++){
-            int rand=(i)%7;
-            itemContent=days[rand]+" - ";
-            itemContent+=weathers[rnd.nextInt(3)];
-            items.add(itemContent);
-        }
-        return items;
-    }
 }
