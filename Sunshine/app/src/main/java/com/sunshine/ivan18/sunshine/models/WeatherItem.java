@@ -6,17 +6,27 @@ import java.util.List;
  * Created by ivan18 on 09/03/15.
  */
 public class WeatherItem {
-    String id;
+
     String main;
     String description;
     String icon;
+    String min;
+    String max;
 
-    public String getId() {
-        return id;
+    public String getMin() {
+        return min;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setMin(String min) {
+        this.min = min;
+    }
+
+    public String getMax() {
+        return max;
+    }
+
+    public void setMax(String max) {
+        this.max = max;
     }
 
     public String getMain() {
@@ -41,5 +51,13 @@ public class WeatherItem {
 
     public void setIcon(String icon) {
         this.icon = icon;
+    }
+
+    @Override
+    public String toString() {
+
+        String description= getMain()+", "+getDescription()+", "+getMin()+", "+getMax()+", "+getIcon();
+
+        return description;
     }
 }

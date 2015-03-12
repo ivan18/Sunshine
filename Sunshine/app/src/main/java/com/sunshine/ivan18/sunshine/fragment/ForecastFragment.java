@@ -1,8 +1,10 @@
 package com.sunshine.ivan18.sunshine.fragment;
 
+import android.app.ProgressDialog;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -16,6 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.sunshine.ivan18.sunshine.MainActivity;
 import com.sunshine.ivan18.sunshine.R;
 import com.sunshine.ivan18.sunshine.models.Forecasts;
 import com.sunshine.ivan18.sunshine.models.TemperatureItem;
@@ -43,6 +46,7 @@ public class ForecastFragment extends Fragment {
 
     public  static  String ERROR="com.sunshine.ivan18.sunshine.forecastFragment";
     private ArrayAdapter<String> adapter;
+    private ListView listView=null;
 
     public ForecastFragment() {
     }
@@ -53,6 +57,7 @@ public class ForecastFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        listView=(ListView)this.getActivity().findViewById(R.id.listview_forecast);
     }
 
     @Override
@@ -84,6 +89,7 @@ public class ForecastFragment extends Fragment {
         ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(adapter);
 
+
         return rootView;
     }
 
@@ -106,10 +112,45 @@ public class ForecastFragment extends Fragment {
      * This class provide to call OpenWeatherMap API to retrieve
      * the forecasts
      */
-    public class FetchWeatherTask extends AsyncTask<String,Void,Void>{
+    public class FetchWeatherTask extends AsyncTask<String,String,String>{
+        int count=0;
+
+
+       // ArrayAdapter<String> adapter=null;
+        ProgressDialog progress=null;
+        @Override
+        protected void onPreExecute() {
+
+            //adapter= (ArrayAdapter<String>)listView.getAdapter();
+            int adapterLength = adapter.getCount();
+            for (int i=0; i < adapterLength; i++){
+                adapter.remove(adapter.getItem(0));
+            }
+            progress = new ProgressDialog(getActivity());
+            progress.setMessage("Downloading Forecasts . . . ");
+            progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progress.setIndeterminate(false);
+            progress.setMax(7);
+            progress.show();
+        }
 
         @Override
-        protected Void doInBackground(String... params) {
+        protected void onPostExecute(String aVoid) {
+            Toast.makeText(getActivity(),"Elementi caricati correttamente", Toast.LENGTH_SHORT).show();
+            progress.dismiss();
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            adapter.add(values[0]);
+            count++;
+            progress.incrementProgressBy(count);
+            //Toast.makeText(getActivity(),values[0], Toast.LENGTH_SHORT).show();
+            }
+
+
+        @Override
+        protected String doInBackground(String... params) {
 
             if(params.length==0){
                 return null;
@@ -188,50 +229,66 @@ public class ForecastFragment extends Fragment {
                     }
                 }
             }
-            JSONObject obj= null;
-            try {
-                obj = new JSONObject(forecastsResponce);
-                JSONArray jsonArray=null;
-                obj.toJSONArray(jsonArray);
-
-                List<Forecasts> forecastList=new ArrayList<Forecasts>();
-
-                Log.i(ERROR,"JSON PARSED");
-                JSONObject list=obj.optJSONObject("list");
-                for (int i=0; i< list.length(); i++) {
-                    //Declaration of variables
-                    Forecasts forecast=null;
-                    WeatherItem weather=new WeatherItem();
-                    TemperatureItem temp=new TemperatureItem();
-                    //get object
-                    JSONObject weatherArray=list.getJSONObject("weather");
-                    JSONObject tempArray=list.getJSONObject("temp");
-                    //Set object
-                    weather.setId(weatherArray.get("id").toString());
-                    weather.setMain(weatherArray.get("main").toString());
-                    weather.setDescription(weatherArray.get("description").toString());
-                    weather.setIcon(weatherArray.get("icon").toString());
-
-                    temp.setDay(tempArray.getDouble("day"));
-                    temp.setMin(tempArray.getDouble("min"));
-                    temp.setMax(tempArray.getDouble("max"));
-                    temp.setNight(tempArray.getDouble("night"));
-                    temp.setEve(tempArray.getDouble("eve"));
-                    temp.setMorn(tempArray.getDouble("morn"));
-
-
-                    forecast = new Forecasts(weather,temp,"Roma");
-                    //JSONObject temperatures=list.getJSONObject("temp");
-                    forecastList.add(forecast);
-                    Log.i("Result", weather.getDescription());
+            if(forecastsResponce!= null && !(forecastsResponce.trim().equals(""))) {
+                List<String> weatherItems = parseJsonResponce(forecastsResponce);
+                if (weatherItems.isEmpty()) {
+                    Log.e(ERROR, "Lista weatherItems vuota");
+                    return null;
                 }
-            } catch (JSONException e) {
-                Log.e(ERROR, e.getMessage());
-                return null;
+                for (String items : weatherItems) {
+                    publishProgress(items);
+                    SystemClock.sleep(1000);
+                }
             }
-            //return forecastsResponce;
             return null;
         }
+    }
+
+    private List<String> parseJsonResponce(String forecastsResponce){
+        List<WeatherItem> weatherItems =new ArrayList<WeatherItem>();
+        List<String> itemsString=new ArrayList<String>();
+
+        JSONObject obj= null;
+        try {
+            obj = new JSONObject(forecastsResponce);
+            JSONArray jsonArray=null;
+            obj.toJSONArray(jsonArray);
+
+            List<Forecasts> forecastList=new ArrayList<Forecasts>();
+
+            Log.i(ERROR,"JSON PARSED");
+
+            //Get weather forecast list
+            JSONArray list=obj.optJSONArray("list");
+            for(int x=0; x< list.length(); x++){
+                //Get json attributes
+                JSONObject itemForecast= (JSONObject)list.get(x);
+                JSONObject temp=(JSONObject)itemForecast.getJSONObject("temp");
+                JSONArray weather=(JSONArray)itemForecast.getJSONArray("weather");
+                //Log.i("JSON PARSE","STEP 1");
+
+                // set new weather item
+                WeatherItem wItem= new WeatherItem();
+                //set temperature
+                wItem.setMax(temp.getString("max"));
+                wItem.setMin(temp.getString("min"));
+
+                // set weather details
+                wItem.setMain((weather.getJSONObject(0).getString("main")));
+                wItem.setDescription((weather.getJSONObject(0).getString("description")));
+                wItem.setIcon((weather.getJSONObject(0).getString("icon")));
+
+                weatherItems.add(wItem);
+                itemsString.add(wItem.toString());
+                Log.i("Item "+x+" : ",wItem.toString());
+            }
+
+        } catch (JSONException e) {
+            Log.e(ERROR, e.getMessage());
+            return null;
+        }
+
+        return itemsString;
     }
 
 }
